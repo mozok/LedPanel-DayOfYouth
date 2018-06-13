@@ -187,3 +187,172 @@ void loop()
     }
 	
 }
+
+//call SNTP server for current time
+void ESPGetTime()
+{
+    uint32_t t = cmd.GetTime();
+    // Serial2.print("Get Time: ");
+    // Serial2.println(t);
+
+    char t2[3];
+
+    itoa(((t % 86400L) / 3600), t2, 10);
+    // Serial2.print("Hour: ");   //DEBUG
+    // Serial2.println(t2);   //DEBUG
+    strcpy(time2, t2); // get the hour (86400 equals secs per day)
+    strcat(time2, ":");
+    //Serial2.println((t % 3600) / 60); //DEBUG
+    //Serial2.println(time2);           //DEBUG
+    if (((t % 3600) / 60) < 10)
+    {
+        Serial2.println("Add 0"); //DEBUG
+        // In the first 10 minutes of each hour, we'll want a leading '0'
+        strcat(time2, "0");
+    }
+    //else {Serial2.println("min > 10");}    //DEBUG
+    // Serial2.println(time2); //DEBUG
+    itoa((t % 3600) / 60, t2, 10);
+    // Serial2.print("Min: ");   //DEBUG
+    // Serial2.println(t2);   //DEBUG
+    strcat(time2, t2); // print the minute (3600 equals secs per minute)
+
+    // Serial2.print("Time: ");   //DEBUG
+    // Serial2.println(time2);   //DEBUG
+
+    dmd.selectFont(UkrRusSystemFont5x7);
+    dmd.clearScreen(true);
+
+    dmd.drawString(12, 0, time1, /*sizeof(time1) / sizeof(*time1)*/ strlen(time1), GRAPHICS_NORMAL);
+    dmd.drawString(34, 8, time2, /*sizeof(time2) / sizeof(*time2)*/ strlen(time2), GRAPHICS_NORMAL);
+}
+
+/*
+  parse data for Ukrainian characters
+  rus and ukr characters consist of 2 bytes, so we ignore 1st byte that are > then 0xCF
+*/
+void strChange(char *strToChange, char *strNew)
+{
+    byte lastChar;
+    //char * buffer2 = malloc(strlen(buffer)+1);
+
+    byte n = 0;
+
+    while (*strToChange != '\0')
+    {
+        if ((byte)*strToChange < 0xCF)
+        {
+            strNew[n] = *strToChange;
+            n++;
+            strToChange++;
+        }
+        else
+        {
+            lastChar = *strToChange;
+            strToChange++;
+
+            switch (lastChar)
+            {
+            case 0xD0:
+            {
+                switch ((byte)*strToChange)
+                {
+                case 0x84: //D084 - Є
+                {
+                    strNew[n] = 0xC0;
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                case 0x86: //D086 І
+                {
+                    strNew[n] = 0xC1;
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                case 0x87: //D087 Ї
+                {
+                    strNew[n] = 0xC2;
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                case 0x81: //D081 Ё
+                {
+                    strNew[n] = 0x95; //Е
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                }
+                break;
+            }
+            case 0xD1:
+            {
+                switch ((byte)*strToChange)
+                {
+                case 0x94: //D196 є
+                {
+                    strNew[n] = 0xC3;
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                case 0x96: //D196 і
+                {
+                    strNew[n] = 0xC4;
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                case 0x97: //D197 ї
+                {
+                    strNew[n] = 0xC5;
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                case 0x91: //D191 ё
+                {
+                    strNew[n] = 0xB5; //е
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                }
+
+                break;
+            }
+            case 0xD2:
+            {
+                switch ((byte)*strToChange)
+                {
+                case 0x90: //D290 Ґ
+                {
+                    strNew[n] = 0x93; //замінюю на Г
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                case 0x91: //D291 ґ
+                {
+                    strNew[n] = 0xB3; //замінюю на г
+                    n++;
+                    strToChange++;
+                    break;
+                }
+                }
+                break;
+            }
+            }
+        }
+    }
+    strNew[n] = '\0';
+    // strcpy(strNew, strNew);
+
+    // Serial2.print("buffer2: ");   //DEBUG
+    // Serial2.println(buffer2);
+
+    //return buffer2;
+}
