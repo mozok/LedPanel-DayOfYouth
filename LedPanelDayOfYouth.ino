@@ -24,6 +24,9 @@ SPIClass SPI_2(2);
 #define DISPLAYS_DOWN 2
 DMD dmd(DISPLAYS_ACROSS, DISPLAYS_DOWN);
 
+const char time1[] = {"Поточний час\0"};       //1st row for time screen
+char time2[] = {"00:00\0"};                    //current time from getTime
+
 const byte imgTree[] = {0x00, 0x00, 0x00, 0x80, 0xe0, 0xb8, 0xf6, 0xfd, 0xee, 0xb8, 0xe0, 0x80, 0x00, 0x00, 0x00, 0x30, 0x78, 0xfe, 0xed, 0xff, 0xdf, 0xff, 0xfe, 0xf7, 0xbf, 0xfd, 0xff, 0xde, 0x78, 0x30};
 const byte imgSnowMan[] = {0x40, 0x60, 0x80, 0x80, 0x00, 0x1c, 0x22, 0xc9, 0xcd, 0xc9, 0xc5, 0xc1, 0x22, 0x1c, 0x00, 0x80, 0x80, 0x60, 0x40, 0x00, 0x00, 0x00, 0x00, 0x1d, 0x22, 0x41, 0x80, 0x80, 0x80, 0x83, 0x80, 0x41, 0x22, 0x1d, 0x00, 0x00, 0x00, 0x00};
 
@@ -180,7 +183,7 @@ void loop()
         dmd.clearScreen(true); //true is normal (all pixels off), false is negative (all pixels on)
         dmd.selectFont(UkrRusArial_14);
         dmd.setBrightness(5000);
-        // ESPGetTime();
+        ESPGetTime();
 
         // timerGetTime = millis();
         // timerScreenChange = millis();
@@ -220,8 +223,8 @@ void ESPGetTime()
     // Serial2.print("Time: ");   //DEBUG
     // Serial2.println(time2);   //DEBUG
 
-    dmd.selectFont(UkrRusSystemFont5x7);
     dmd.clearScreen(true);
+    dmd.selectFont(UkrRusArial_14);
 
     dmd.drawString(12, 0, time1, /*sizeof(time1) / sizeof(*time1)*/ strlen(time1), GRAPHICS_NORMAL);
     dmd.drawString(34, 8, time2, /*sizeof(time2) / sizeof(*time2)*/ strlen(time2), GRAPHICS_NORMAL);
