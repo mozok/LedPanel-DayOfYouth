@@ -227,7 +227,7 @@ void ESPGetTime()
     dmd.selectFont(UkrRusArial_14);
 
     dmd.drawString(12, 0, time1, /*sizeof(time1) / sizeof(*time1)*/ strlen(time1), GRAPHICS_NORMAL);
-    dmd.drawString(34, 8, time2, /*sizeof(time2) / sizeof(*time2)*/ strlen(time2), GRAPHICS_NORMAL);
+    dmd.drawString(20, 16, time2, /*sizeof(time2) / sizeof(*time2)*/ strlen(time2), GRAPHICS_NORMAL);
 }
 
 /*
