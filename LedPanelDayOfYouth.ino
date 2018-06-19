@@ -10,7 +10,7 @@
 #include <ELClientCmd.h>
 #include <ELClientMqtt.h>
 
-#pragma region DMD-initialize
+#pragma region DMD - initialize
 
 #include <SPI.h> //SPI.h must be included as DMD is written by SPI (the IDE complains otherwise)
 #include <DMDSTM.h>
@@ -20,15 +20,21 @@
 
 //Fire up the DMD library as dmd
 SPIClass SPI_2(2);
-#define DISPLAYS_ACROSS 2
-#define DISPLAYS_DOWN 2
+#define DISPLAYS_ACROSS 1
+#define DISPLAYS_DOWN 1
 DMD dmd(DISPLAYS_ACROSS, DISPLAYS_DOWN);
 
-const char time1[] = {"Поточний час\0"};       //1st row for time screen
-char time2[] = {"00:00\0"};                    //current time from getTime
+// const char time1[] = {"Поточний час\0"};       //1st row for time screen
+char time2[] = {"00:00\0"};       // current time from getTime
+long timerScreenChange = 0;       // timer for screen controll
+uint16_t screenChangeTime = 6000; // change screen every n seconds
+byte screen = 0;
+byte mode = 0;        //mode to show
+byte lastMode = mode; //last mode shown
 
-const byte imgTree[] = {0x00, 0x00, 0x00, 0x80, 0xe0, 0xb8, 0xf6, 0xfd, 0xee, 0xb8, 0xe0, 0x80, 0x00, 0x00, 0x00, 0x30, 0x78, 0xfe, 0xed, 0xff, 0xdf, 0xff, 0xfe, 0xf7, 0xbf, 0xfd, 0xff, 0xde, 0x78, 0x30};
-const byte imgSnowMan[] = {0x40, 0x60, 0x80, 0x80, 0x00, 0x1c, 0x22, 0xc9, 0xcd, 0xc9, 0xc5, 0xc1, 0x22, 0x1c, 0x00, 0x80, 0x80, 0x60, 0x40, 0x00, 0x00, 0x00, 0x00, 0x1d, 0x22, 0x41, 0x80, 0x80, 0x80, 0x83, 0x80, 0x41, 0x22, 0x1d, 0x00, 0x00, 0x00, 0x00};
+// const byte imgTree[] = {0x00, 0x00, 0x00, 0x80, 0xe0, 0xb8, 0xf6, 0xfd, 0xee, 0xb8, 0xe0, 0x80, 0x00, 0x00, 0x00, 0x30, 0x78, 0xfe, 0xed, 0xff, 0xdf, 0xff, 0xfe, 0xf7, 0xbf, 0xfd, 0xff, 0xde, 0x78, 0x30};
+// const byte imgSnowMan[] = {0x40, 0x60, 0x80, 0x80, 0x00, 0x1c, 0x22, 0xc9, 0xcd, 0xc9, 0xc5, 0xc1, 0x22, 0x1c, 0x00, 0x80, 0x80, 0x60, 0x40, 0x00, 0x00, 0x00, 0x00, 0x1d, 0x22, 0x41, 0x80, 0x80, 0x80, 0x83, 0x80, 0x41, 0x22, 0x1d, 0x00, 0x00, 0x00, 0x00};
+byte imgToShow[] = {0x00, 0x00, 0xfc, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfc, 0x24, 0x24, 0x04, 0x04, 0x00, 0x00, 0xfc, 0x04, 0x88, 0x70, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x05, 0x05, 0x05, 0xfd, 0x05, 0x04, 0x04, 0x01, 0xfd, 0xa5, 0xa5, 0x85, 0x00, 0x98, 0xa5, 0xa5, 0x44, 0x00, 0x04, 0x04, 0xfc, 0x04, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 /*--------------------------------------------------------------------------------------
   Interrupt handler for Timer1 (TimerOne) driven DMD refresh scanning, this gets
@@ -111,7 +117,7 @@ void mqttData(void *response)
     res->popChar(data);
     Serial2.println(data);
 
-    // modeSwitch(data);
+    modeSwitch(data);
 }
 
 void mqttPublished(void *response)
@@ -146,14 +152,14 @@ void setup()
     pinMode(SPI2_NSS_PIN, OUTPUT);
 
     dmd.clearScreen(true); //true is normal (all pixels off), false is negative (all pixels on)
-    
+
     // Sync-up with esp-link, this is required at the start of any sketch and initializes the
     // callbacks to the wifi status change callback. The callback gets called with the initial
     // status right after Sync() below completes.
     esp.wifiCb.attach(wifiCb); // wifi status change callback, optional (delete if not desired)
     esp.resetCb = resetCb;
     resetCb();
-	
+
     // Set-up callbacks for events and initialize with es-link.
     mqtt.connectedCb.attach(mqttConnected);
     mqtt.disconnectedCb.attach(mqttDisconnected);
@@ -186,13 +192,113 @@ void loop()
         ESPGetTime();
 
         // timerGetTime = millis();
-        // timerScreenChange = millis();
+        timerScreenChange = millis();
     }
-	
+    if (connected)
+    {
+        unsigned long currentMillis = millis();
+
+        if (currentMillis - timerScreenChange > screenChangeTime)
+        {
+            screenControll();
+
+            timerScreenChange = currentMillis;
+        }
+    }
+}
+
+void screenControll(void)
+{
+    switch (screen)
+    {
+    case 0:
+    {
+        // ESPGetTime();
+
+        break;
+    }
+    case 1:
+    {
+        dmd.clearScreen(true);
+        
+        dmd.drawImg(0, 0, imgToShow, sizeof(imgToShow) / 2);
+
+        break;
+    }
+    }
+
+    screen++;
+
+    if (screen >= 2)
+    {
+        screen = 0;
+    }
+}
+
+void modeSwitch(char *dataRes)
+{
+    lastMode = mode;
+
+    char *pch;
+    pch = strtok(dataRes, "#");
+    mode = atoi(pch);
+
+    switch (mode)
+    {
+        case 0:
+        {
+
+            break;
+        }
+        case 1:
+        {
+            pch = strtok(NULL, "#");
+
+            // Serial2.println(pch);
+
+            strToHex(pch, imgToShow, sizeof(imgToShow));
+
+            break;
+        }
+    }
+}
+
+void strToHex(char *str, byte *img, byte size)
+{
+    // Serial2.print("size: ");
+    // Serial2.println(size);
+
+    for(int i = 0; i < size; i ++)
+    {
+        char c1 = *str;
+        str++;
+        char c2 = *str;
+        str++;    
+
+        *img = htoi(c1)*16+htoi(c2);
+
+        // Serial2.print(c1);
+        // Serial2.print(c2);
+        // Serial2.print("\t");
+        // Serial2.println(*img);
+
+        img++;
+    } 
+}
+
+byte htoi(char c)
+{
+    if (c <= '9')
+        return c-'0';
+    // if (c <= 'F');
+    //     return c - 'A' + 10;
+    if (c <= 'f')
+        return c - 'a' + 10;
+    return 0;
 }
 
 //call SNTP server for current time
-void ESPGetTime()
+void ESPGetTime(void)
 {
     uint32_t t = cmd.GetTime();
     // Serial2.print("Get Time: ");
@@ -226,8 +332,8 @@ void ESPGetTime()
     dmd.clearScreen(true);
     dmd.selectFont(UkrRusArial_14);
 
-    dmd.drawString(12, 0, time1, /*sizeof(time1) / sizeof(*time1)*/ strlen(time1), GRAPHICS_NORMAL);
-    dmd.drawString(20, 16, time2, /*sizeof(time2) / sizeof(*time2)*/ strlen(time2), GRAPHICS_NORMAL);
+    // dmd.drawString(12, 0, time1, /*sizeof(time1) / sizeof(*time1)*/ strlen(time1), GRAPHICS_NORMAL);
+    dmd.drawString(2, 2, time2, /*sizeof(time2) / sizeof(*time2)*/ strlen(time2), GRAPHICS_NORMAL);
 }
 
 /*
