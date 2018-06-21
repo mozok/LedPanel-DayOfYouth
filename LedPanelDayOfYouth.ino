@@ -194,17 +194,28 @@ void loop()
         // timerGetTime = millis();
         timerScreenChange = millis();
     }
-    // if (connected)
-    // {
-    //     unsigned long currentMillis = millis();
+    if (connected)
+    {
+        unsigned long currentMillis = millis();
 
-    //     if (currentMillis - timerScreenChange > screenChangeTime)
-    //     {
-    //         screenControll();
+        if (mode == 0)
+        {
+            if (currentMillis - timerScreenChange > screenChangeTime)
+            {
+                screenChangeTime = 60000;
+                // Serial2.println("time update");
+                ESPGetTime();
+                timerScreenChange = currentMillis;
+            }
+        }
 
-    //         timerScreenChange = currentMillis;
-    //     }
-    // }
+        // if (currentMillis - timerScreenChange > screenChangeTime)
+        // {
+        //     screenControll();
+
+        //     timerScreenChange = currentMillis;
+        // }
+    }
 }
 
 void screenControll(void)
@@ -248,8 +259,11 @@ void modeSwitch(char *dataRes)
         case 0:
         {
             screen = 0;
-            screenControll();
+            // ESPGetTime();
+            // screenControll();
+            // timerScreenChange = millis();
             timerScreenChange = millis();
+            screenChangeTime = 500;
 
             break;
         }
@@ -263,10 +277,18 @@ void modeSwitch(char *dataRes)
             
             screen = 1;
             screenControll();
-            timerScreenChange = millis();
+            // timerScreenChange = millis();
 
             break;
         }
+        // case 2:
+        // {
+        //     screen = 0;
+        //     screenControll();
+        //     timerScreenChange = millis();
+
+        //     break;
+        // }
     }
 }
 
