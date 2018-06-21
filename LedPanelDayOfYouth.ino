@@ -194,17 +194,17 @@ void loop()
         // timerGetTime = millis();
         timerScreenChange = millis();
     }
-    if (connected)
-    {
-        unsigned long currentMillis = millis();
+    // if (connected)
+    // {
+    //     unsigned long currentMillis = millis();
 
-        if (currentMillis - timerScreenChange > screenChangeTime)
-        {
-            screenControll();
+    //     if (currentMillis - timerScreenChange > screenChangeTime)
+    //     {
+    //         screenControll();
 
-            timerScreenChange = currentMillis;
-        }
-    }
+    //         timerScreenChange = currentMillis;
+    //     }
+    // }
 }
 
 void screenControll(void)
@@ -213,7 +213,7 @@ void screenControll(void)
     {
     case 0:
     {
-        // ESPGetTime();
+        ESPGetTime();
 
         break;
     }
@@ -247,6 +247,9 @@ void modeSwitch(char *dataRes)
     {
         case 0:
         {
+            screen = 0;
+            screenControll();
+            timerScreenChange = millis();
 
             break;
         }
@@ -257,6 +260,10 @@ void modeSwitch(char *dataRes)
             // Serial2.println(pch);
 
             strToHex(pch, imgToShow, sizeof(imgToShow));
+            
+            screen = 1;
+            screenControll();
+            timerScreenChange = millis();
 
             break;
         }
